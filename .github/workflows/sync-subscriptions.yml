@@ -1,0 +1,32 @@
+name: Sync de suscripciones (cada hora)
+
+# Vercel Hobby solo permite cron diario -- por eso el disparador vive acá,
+# en GitHub Actions (gratis, sin ese límite), igual que en GESTOR_BARBERIA.
+# Ver app/api/cron/sync-subscriptions.
+#
+# PANEL_URL y CRON_SECRET son secrets del repo (Settings → Secrets and
+# variables → Actions), no del deploy de Vercel -- son dos cosas distintas
+# aunque el valor de CRON_SECRET tiene que ser el mismo en ambos lugares.
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch: {} # Para probarlo a mano desde la pestaña Actions.
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al endpoint de sincronización
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.PANEL_URL }}/api/cron/sync-subscriptions")
+          body=$(echo "$resp" | head -n -1)
+          code=$(echo "$resp" | tail -n1)
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" -ge 400 ]; then
+            echo "::error::El endpoint de sync devolvió $code"
+            exit 1
+          fi
