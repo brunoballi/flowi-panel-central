@@ -1,17 +1,15 @@
 'use client'
 
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 export interface GrowthPoint {
   month: string // 'YYYY-MM'
   total: number // clientes activos/en prueba acumulados a fin de ese mes
 }
 
-// Área con total acumulado en vez de barras por mes: con pocos clientes,
-// un gráfico de barras mensual se ve como puntos sueltos y no cuenta nada.
-// El acumulado siempre se lee igual — "así viene creciendo la cartera" —
-// sea 1 cliente o 100. Sigue la recomendación de la skill de UI para
-// tendencias en el tiempo: line/area, no barras.
+// Línea simple con puntos grandes y el número al lado de cada uno: se lee
+// como una historia ("acá había 1, acá 2...") aunque haya pocos meses de
+// datos, sin necesitar leer ejes con atención.
 export function GrowthChart({ data }: { data: GrowthPoint[] }) {
   if (data.length === 0) {
     return <p className="text-sm text-zinc-500 dark:text-zinc-400">Todavía no hay clientes registrados.</p>
@@ -19,13 +17,7 @@ export function GrowthChart({ data }: { data: GrowthPoint[] }) {
 
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-        <defs>
-          <linearGradient id="growthFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2563eb" stopOpacity={0.25} />
-            <stop offset="100%" stopColor="#2563eb" stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
+      <LineChart data={data} margin={{ top: 24, right: 16, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-zinc-200 dark:text-zinc-800" />
         <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'currentColor' }} className="text-zinc-500 dark:text-zinc-400" stroke="currentColor" />
         <YAxis
@@ -39,15 +31,17 @@ export function GrowthChart({ data }: { data: GrowthPoint[] }) {
           formatter={(value) => [`${value} cliente${value === 1 ? '' : 's'}`, 'Total']}
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
         />
-        <Area
+        <Line
           type="monotone"
           dataKey="total"
           stroke="#2563eb"
-          strokeWidth={2}
-          fill="url(#growthFill)"
+          strokeWidth={3}
+          dot={{ r: 5, fill: '#2563eb', strokeWidth: 2, stroke: 'var(--background)' }}
+          activeDot={{ r: 7 }}
+          label={{ position: 'top', fontSize: 12, fill: '#2563eb', fontWeight: 600 }}
           isAnimationActive={false}
         />
-      </AreaChart>
+      </LineChart>
     </ResponsiveContainer>
   )
 }

@@ -36,6 +36,11 @@ interface RemoteStatusResponse {
   mp_preapproval_id?: string | null
   mp_payer_email?: string | null
   days_overdue?: number
+  last_payment_amount?: number | null
+  last_payment_mp_fee?: number | null
+  last_payment_net?: number | null
+  last_payment_currency?: string | null
+  last_payment_at?: string | null
 }
 
 export interface SyncResult {
@@ -109,6 +114,11 @@ export async function syncAllTenants(db: SupabaseClient<any>): Promise<SyncResul
           mp_preapproval_id: remote.mp_preapproval_id ?? null,
           mp_payer_email: remote.mp_payer_email ?? null,
           days_overdue: remote.days_overdue ?? null,
+          last_payment_amount: remote.last_payment_amount ?? null,
+          last_payment_mp_fee: remote.last_payment_mp_fee ?? null,
+          last_payment_net: remote.last_payment_net ?? null,
+          last_payment_currency: remote.last_payment_currency ?? null,
+          last_payment_at: remote.last_payment_at ?? null,
           last_synced_at: new Date().toISOString(),
           last_sync_ok: true,
           last_sync_error: null,

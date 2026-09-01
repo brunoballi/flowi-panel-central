@@ -6,6 +6,7 @@ import {
   NoSymbolIcon,
   XCircleIcon,
   BanknotesIcon,
+  WalletIcon,
 } from '@heroicons/react/24/outline'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
@@ -20,6 +21,10 @@ interface SnapshotRow {
   current_period_end: string | null
   amount: number | null
   currency: string | null
+  last_payment_amount: number | null
+  last_payment_mp_fee: number | null
+  last_payment_net: number | null
+  last_payment_currency: string | null
   last_synced_at: string | null
   last_sync_ok: boolean
   last_sync_error: string | null
@@ -54,7 +59,7 @@ export default async function DashboardPage() {
   const { data: tenantsRaw, error } = await supabase
     .from('tenants')
     .select(
-      'id, nombre, slug, dominio, activo, created_at, subscription_snapshots(plan, status, effective_state, current_period_end, amount, currency, last_synced_at, last_sync_ok, last_sync_error)'
+      'id, nombre, slug, dominio, activo, created_at, subscription_snapshots(plan, status, effective_state, current_period_end, amount, currency, last_payment_amount, last_payment_mp_fee, last_payment_net, last_payment_currency, last_synced_at, last_sync_ok, last_sync_error)'
     )
     .order('created_at', { ascending: false })
 
@@ -69,6 +74,7 @@ export default async function DashboardPage() {
     sin_sincronizar: 0,
   }
   let mrr = 0
+  let netTotal = 0
   let lastSyncedAt: string | null = null
 
   for (const t of tenants) {
@@ -81,7 +87,10 @@ export default async function DashboardPage() {
       continue
     }
     counts[snap.effective_state]++
-    if (snap.effective_state === 'active' && snap.amount) mrr += Number(snap.amount)
+    if (snap.effective_state === 'active') {
+      if (snap.amount) mrr += Number(snap.amount)
+      if (snap.last_payment_net) netTotal += Number(snap.last_payment_net)
+    }
   }
 
   // Crecimiento: para cada tenant, el mes de su PRIMERA vez en active/trial
@@ -133,13 +142,19 @@ export default async function DashboardPage() {
         <RefreshButton />
       </div>
 
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
         <KpiCard label="Activos" value={counts.active} state="active" />
         <KpiCard label="Prueba" value={counts.trial} state="trial" />
         <KpiCard label="Vencidos" value={counts.past_due} state="past_due" />
         <KpiCard label="Bloqueados" value={counts.blocked} state="blocked" />
         <KpiCard label="Cancelados" value={counts.cancelled} state="cancelled" />
-        <KpiCard label="MRR estimado" value={`$${mrr.toLocaleString('es-AR')}`} icon={BanknotesIcon} color="#18181b" />
+        <KpiCard label="MRR bruto" value={`$${mrr.toLocaleString('es-AR')}`} icon={BanknotesIcon} color="#18181b" />
+        <KpiCard
+          label="Neto (post MP)"
+          value={`$${netTotal.toLocaleString('es-AR')}`}
+          icon={WalletIcon}
+          color="#0d9488"
+        />
       </div>
 
       <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -158,6 +173,8 @@ export default async function DashboardPage() {
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Próximo cobro</th>
                 <th className="px-4 py-3">Monto</th>
+                <th className="px-4 py-3">Comisión MP</th>
+                <th className="px-4 py-3">Neto</th>
                 <th className="px-4 py-3">Última sync</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -165,7 +182,7 @@ export default async function DashboardPage() {
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {tenants.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500">
                     Todavía no hay tenants dados de alta.
                   </td>
                 </tr>
@@ -213,6 +230,16 @@ export default async function DashboardPage() {
                     </td>
                     <td className="px-4 py-3 tabular-nums text-zinc-700 dark:text-zinc-300">
                       {snap?.amount ? `$${Number(snap.amount).toLocaleString('es-AR')} ${snap.currency ?? ''}` : '—'}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-zinc-500 dark:text-zinc-400">
+                      {snap?.last_payment_mp_fee != null
+                        ? `-$${Number(snap.last_payment_mp_fee).toLocaleString('es-AR')}`
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums font-medium text-emerald-700 dark:text-emerald-400">
+                      {snap?.last_payment_net != null
+                        ? `$${Number(snap.last_payment_net).toLocaleString('es-AR')} ${snap.last_payment_currency ?? ''}`
+                        : '—'}
                     </td>
                     <td className="px-4 py-3 text-xs text-zinc-400 dark:text-zinc-500">
                       {snap?.last_synced_at ? new Date(snap.last_synced_at).toLocaleString('es-AR') : 'nunca'}
