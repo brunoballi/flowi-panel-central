@@ -92,16 +92,19 @@ export function EditTenantForm({ tenant }: { tenant: Tenant }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+    >
       <Field label="Nombre" value={form.nombre} onChange={(v) => set('nombre', v)} required />
       <Field label="Dominio" value={form.dominio} onChange={(v) => set('dominio', v)} required />
       <Field label="Deploy URL" value={form.deploy_url} onChange={(v) => set('deploy_url', v)} required />
       <div>
-        <label className="mb-1 block text-sm font-medium text-zinc-700">Plan</label>
+        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Plan</label>
         <select
           value={form.plan_actual}
           onChange={(e) => set('plan_actual', e.target.value)}
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
         >
           <option value="basico">Básico</option>
           <option value="premium">Premium</option>
@@ -111,18 +114,18 @@ export function EditTenantForm({ tenant }: { tenant: Tenant }) {
       <Field label="Contacto — email" type="email" value={form.contacto_email} onChange={(v) => set('contacto_email', v)} />
       <Field label="Contacto — teléfono" value={form.contacto_telefono} onChange={(v) => set('contacto_telefono', v)} />
 
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
+      <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
         <input type="checkbox" checked={form.activo} onChange={(e) => set('activo', e.target.checked)} />
         Tenant activo (se excluye de la sincronización si se destilda)
       </label>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="flex flex-wrap gap-3 pt-2">
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+          className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
         >
           {loading ? 'Guardando…' : 'Guardar'}
         </button>
@@ -130,14 +133,14 @@ export function EditTenantForm({ tenant }: { tenant: Tenant }) {
           type="button"
           onClick={handleRotate}
           disabled={rotating}
-          className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+          className="cursor-pointer rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950"
         >
           {rotating ? 'Rotando…' : 'Rotar secreto de ingesta'}
         </button>
         <button
           type="button"
           onClick={() => router.push('/dashboard')}
-          className="rounded-md px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-900"
+          className="cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
         >
           Cancelar
         </button>
@@ -161,13 +164,13 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700">{label}</label>
+      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</label>
       <input
         type={type}
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
       />
     </div>
   )

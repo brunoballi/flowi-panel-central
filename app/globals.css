@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Habilita `dark:` basado en data-theme (no solo en prefers-color-scheme),
+   para poder tener System / Light / Dark manual — ver ThemeToggle. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,15 +16,23 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Tema del sistema operativo/navegador: se aplica solo si el usuario no
+   eligió "Claro" a mano (ver ThemeToggle, que setea data-theme en <html>). */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --background: #09090b;
+    --foreground: #f4f4f5;
   }
+}
+
+/* Elección manual "Oscuro": gana siempre, sea cual sea el tema del sistema. */
+:root[data-theme="dark"] {
+  --background: #09090b;
+  --foreground: #f4f4f5;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

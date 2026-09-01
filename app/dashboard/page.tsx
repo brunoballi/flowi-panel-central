@@ -10,7 +10,7 @@ import {
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { EFFECTIVE_STATE_COLORS, EFFECTIVE_STATE_LABELS, formatDate, type EffectiveState } from '@/lib/subscription'
-import { MonthlySignupsChart, type MonthlyCount } from './monthly-signups-chart'
+import { GrowthChart, type GrowthPoint } from './growth-chart'
 import { RefreshButton } from './refresh-button'
 
 interface SnapshotRow {
@@ -84,32 +84,47 @@ export default async function DashboardPage() {
     if (snap.effective_state === 'active' && snap.amount) mrr += Number(snap.amount)
   }
 
-  // Gráfico de altas por mes: transiciones hacia active/trial de los últimos 12 meses.
+  // Crecimiento: para cada tenant, el mes de su PRIMERA vez en active/trial
+  // (no cada transición — un cliente que vuelve de past_due a active no es
+  // un cliente nuevo). Con eso arriba, un acumulado mes a mes.
   const { data: history } = await supabase
     .from('subscription_snapshot_history')
-    .select('effective_state, recorded_at')
+    .select('tenant_id, effective_state, recorded_at')
     .in('effective_state', ['active', 'trial'])
     .order('recorded_at', { ascending: true })
 
-  const monthCounts = new Map<string, number>()
+  const firstActivationMonth = new Map<string, string>()
   for (const row of history ?? []) {
-    const month = String(row.recorded_at).slice(0, 7)
-    monthCounts.set(month, (monthCounts.get(month) ?? 0) + 1)
+    if (!firstActivationMonth.has(row.tenant_id)) {
+      firstActivationMonth.set(row.tenant_id, String(row.recorded_at).slice(0, 7))
+    }
   }
-  const chartData: MonthlyCount[] = Array.from(monthCounts.entries()).map(([month, count]) => ({ month, count }))
+
+  const newPerMonth = new Map<string, number>()
+  for (const month of firstActivationMonth.values()) {
+    newPerMonth.set(month, (newPerMonth.get(month) ?? 0) + 1)
+  }
+
+  const growthData: GrowthPoint[] = Array.from(newPerMonth.keys())
+    .sort()
+    .reduce<GrowthPoint[]>((acc, month) => {
+      const previousTotal = acc.length > 0 ? acc[acc.length - 1].total : 0
+      acc.push({ month, total: previousTotal + newPerMonth.get(month)! })
+      return acc
+    }, [])
 
   return (
     <div className="mx-auto max-w-6xl">
       {error && (
-        <p className="mb-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">
+        <p className="mb-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           Error cargando tenants: {error.message}
         </p>
       )}
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-900">Resumen</h1>
-          <p className="text-xs text-zinc-500">
+          <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Resumen</h1>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             {lastSyncedAt
               ? `Última sincronización: ${new Date(lastSyncedAt).toLocaleString('es-AR')}`
               : 'Todavía no se sincronizó ningún tenant.'}
@@ -127,15 +142,16 @@ export default async function DashboardPage() {
         <KpiCard label="MRR estimado" value={`$${mrr.toLocaleString('es-AR')}`} icon={BanknotesIcon} color="#18181b" />
       </div>
 
-      <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-zinc-900">Altas por mes</h2>
-        <MonthlySignupsChart data={chartData} />
+      <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <h2 className="mb-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Crecimiento de clientes</h2>
+        <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">Total acumulado de clientes captados, mes a mes.</p>
+        <GrowthChart data={growthData} />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
+            <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-950/50 dark:text-zinc-400">
               <tr>
                 <th className="px-4 py-3">Tenant</th>
                 <th className="px-4 py-3">Plan</th>
@@ -146,10 +162,10 @@ export default async function DashboardPage() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {tenants.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-zinc-400">
+                  <td colSpan={7} className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-500">
                     Todavía no hay tenants dados de alta.
                   </td>
                 </tr>
@@ -158,12 +174,15 @@ export default async function DashboardPage() {
                 const snap = oneSnapshot(t.subscription_snapshots)
                 const state = snap?.effective_state ?? null
                 return (
-                  <tr key={t.id} className={`transition-colors hover:bg-zinc-50 ${!t.activo ? 'opacity-50' : ''}`}>
+                  <tr
+                    key={t.id}
+                    className={`transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60 ${!t.activo ? 'opacity-50' : ''}`}
+                  >
                     <td className="px-4 py-3">
-                      <div className="font-medium text-zinc-900">{t.nombre}</div>
-                      <div className="text-xs text-zinc-400">{t.dominio}</div>
+                      <div className="font-medium text-zinc-900 dark:text-zinc-100">{t.nombre}</div>
+                      <div className="text-xs text-zinc-400 dark:text-zinc-500">{t.dominio}</div>
                     </td>
-                    <td className="px-4 py-3 capitalize text-zinc-700">{snap?.plan ?? '—'}</td>
+                    <td className="px-4 py-3 capitalize text-zinc-700 dark:text-zinc-300">{snap?.plan ?? '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {state ? (
@@ -174,13 +193,13 @@ export default async function DashboardPage() {
                             {EFFECTIVE_STATE_LABELS[state]}
                           </span>
                         ) : (
-                          <span className="rounded-full bg-zinc-200 px-2 py-1 text-xs font-medium text-zinc-600">
+                          <span className="rounded-full bg-zinc-200 px-2 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                             Sin sincronizar
                           </span>
                         )}
                         {snap && !snap.last_sync_ok && (
                           <span
-                            className="flex items-center gap-1 text-xs text-red-600"
+                            className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400"
                             title={snap.last_sync_error ?? undefined}
                           >
                             <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
@@ -189,17 +208,19 @@ export default async function DashboardPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 tabular-nums text-zinc-700">{formatDate(snap?.current_period_end ?? null)}</td>
-                    <td className="px-4 py-3 tabular-nums text-zinc-700">
+                    <td className="px-4 py-3 tabular-nums text-zinc-700 dark:text-zinc-300">
+                      {formatDate(snap?.current_period_end ?? null)}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-zinc-700 dark:text-zinc-300">
                       {snap?.amount ? `$${Number(snap.amount).toLocaleString('es-AR')} ${snap.currency ?? ''}` : '—'}
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-400">
+                    <td className="px-4 py-3 text-xs text-zinc-400 dark:text-zinc-500">
                       {snap?.last_synced_at ? new Date(snap.last_synced_at).toLocaleString('es-AR') : 'nunca'}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/tenants/${t.id}/edit`}
-                        className="text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:underline"
+                        className="text-xs font-medium text-zinc-600 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
                       >
                         Editar
                       </Link>
@@ -233,14 +254,14 @@ function KpiCard({
 
   return (
     <div
-      className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
+      className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
       style={{ borderLeft: `3px solid ${accent}` }}
     >
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-zinc-500">{label}</span>
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{label}</span>
         {Icon && <Icon className="h-4 w-4" style={{ color: accent }} aria-hidden="true" />}
       </div>
-      <div className="text-2xl font-semibold tabular-nums text-zinc-900">{value}</div>
+      <div className="text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">{value}</div>
     </div>
   )
 }

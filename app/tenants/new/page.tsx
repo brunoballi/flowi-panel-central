@@ -46,7 +46,7 @@ export default function NewTenantPage() {
 
   if (secret) {
     return (
-      <div className="mx-auto max-w-lg">
+      <div className="mx-auto max-w-lg p-6">
         <SecretReveal
           title="Tenant creado"
           secret={secret}
@@ -58,9 +58,12 @@ export default function NewTenantPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="mb-6 text-xl font-semibold text-zinc-900">Nuevo tenant</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6">
+    <div className="mx-auto max-w-lg p-6">
+      <h1 className="mb-6 text-xl font-semibold text-zinc-900 dark:text-zinc-100">Nuevo tenant</h1>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      >
         <Field label="Nombre de la barbería" value={form.nombre} onChange={(v) => set('nombre', v)} required />
         <Field
           label="Slug (identificador único, ej: barberia-x)"
@@ -81,11 +84,11 @@ export default function NewTenantPage() {
           required
         />
         <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700">Plan</label>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Plan</label>
           <select
             value={form.plan_actual}
             onChange={(e) => set('plan_actual', e.target.value)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
           >
             <option value="basico">Básico</option>
             <option value="premium">Premium</option>
@@ -104,20 +107,20 @@ export default function NewTenantPage() {
           onChange={(v) => set('contacto_telefono', v)}
         />
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
             disabled={loading}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+            className="cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
           >
             {loading ? 'Creando…' : 'Crear tenant'}
           </button>
           <button
             type="button"
             onClick={() => router.push('/dashboard')}
-            className="rounded-md px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-900"
+            className="cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           >
             Cancelar
           </button>
@@ -142,13 +145,13 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-zinc-700">{label}</label>
+      <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</label>
       <input
         type={type}
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
       />
     </div>
   )

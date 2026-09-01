@@ -15,8 +15,8 @@ export default async function EditTenantPage({ params }: { params: Promise<{ ten
   if (!tenant) notFound()
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="mb-6 text-xl font-semibold text-zinc-900">Editar tenant</h1>
+    <div className="mx-auto max-w-lg p-6">
+      <h1 className="mb-6 text-xl font-semibold text-zinc-900 dark:text-zinc-100">Editar tenant</h1>
       <EditTenantForm tenant={tenant} />
     </div>
   )

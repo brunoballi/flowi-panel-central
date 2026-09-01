@@ -31,14 +31,14 @@ export function RefreshButton() {
   return (
     <div className="flex items-center gap-3">
       {feedback?.kind === 'ok' && (
-        <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
           <CheckCircleIcon className="h-4 w-4" aria-hidden="true" />
           Sincronizado {feedback.synced}/{feedback.synced + feedback.failed}
           {feedback.failed > 0 && ` (${feedback.failed} con error)`}
         </span>
       )}
       {feedback?.kind === 'error' && (
-        <span className="flex items-center gap-1.5 text-xs font-medium text-red-700">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-red-700 dark:text-red-400">
           <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
           {feedback.message}
         </span>
@@ -48,7 +48,7 @@ export function RefreshButton() {
         onClick={handleClick}
         disabled={loading}
         aria-busy={loading}
-        className="inline-flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
       >
         <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
         {loading ? 'Actualizando…' : 'Actualizar ahora'}
